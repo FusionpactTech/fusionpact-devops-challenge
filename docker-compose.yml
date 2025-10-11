@@ -1,0 +1,25 @@
+version: '3.9'
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: frontend-app
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - devops-network
+
+  backend:
+    build: ./backend
+    container_name: backend-app
+    ports:
+      - "8000:8000"
+    networks:
+      - devops-network
+
+networks:
+  devops-network:
+    driver: bridge
+
