@@ -18,6 +18,14 @@ async def index():
     return {"message": "Hello from FastAPI -@kiranrakh155@gmail.com ;)"}
 
 
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint for monitoring and CI/CD
+    """
+    return {"status": "healthy", "service": "fusionpact-backend", "version": "1.0.0"}
+
+
 @app.post("/users", response_model=BaseResponse)
 async def user_create(user: UserIn):
     """

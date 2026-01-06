@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Scrape the FastAPI backend metrics
+  - job_name: "fusionpact-backend"
+    static_configs:
+      - targets: ["fusionpact-backend:8060"]
+    metrics_path: "/metrics"
+    scrape_interval: 10s
+    scrape_timeout: 10s
+
+  # Monitor Docker container metrics via cAdvisor
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["fusionpact-cadvisor:8080"]
+    scrape_interval: 15s
+
+  # Monitor Node/System metrics via Node Exporter
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["fusionpact-node-exporter:9100"]
+    scrape_interval: 15s

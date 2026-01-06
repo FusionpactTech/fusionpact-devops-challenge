@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: fusionpact-devops-challenge-frontend:latest
+    ports:
+      - "8070:80"
+    networks:
+      - fusionpact-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    image: fusionpact-devops-challenge-backend:latest
+    ports:
+      - "6000:6000"
+    volumes:
+      - ./backend/app/data:/app/data
+    networks:
+      - fusionpact-network
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=staging
+      - LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  fusionpact-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local

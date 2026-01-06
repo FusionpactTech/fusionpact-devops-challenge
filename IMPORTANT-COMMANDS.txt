@@ -1,0 +1,324 @@
+# FUSIONPACT DEVOPS CHALLENGE - IMPORTANT COMMANDS
+# ================================================
+
+# ============================================================================
+# LEVEL 1 - CLOUD DEPLOYMENT COMMANDS
+# ============================================================================
+
+# Build and Start Services (Development)
+docker-compose build
+docker-compose up -d
+docker-compose ps
+docker-compose logs -f
+
+# Build and Start Services (Production)
+docker-compose -f docker-compose.prod.yml build
+docker-compose -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.prod.yml ps
+
+# Stop Services
+docker-compose down
+docker-compose -f docker-compose.prod.yml down
+
+# Health Check Level 1
+.\health-check.ps1
+
+# Test Individual Services
+curl http://localhost:8080                    # Frontend
+curl http://localhost:8000                    # Backend API
+curl http://localhost:8000/users              # Users API
+curl http://localhost:8000/metrics            # Prometheus metrics
+
+# Test POST API
+$postBody = @{ first_name = "John"; last_name = "Doe"; age = 30 } | ConvertTo-Json
+Invoke-WebRequest -Uri "http://localhost:8000/users" -Method Post -Body $postBody -ContentType "application/json"
+
+# ============================================================================
+# LEVEL 2 - MONITORING & OBSERVABILITY COMMANDS
+# ============================================================================
+
+# Start Complete Monitoring Stack
+docker-compose -f docker-compose.monitoring.yml build
+docker-compose -f docker-compose.monitoring.yml up -d
+docker-compose -f docker-compose.monitoring.yml ps
+docker-compose -f docker-compose.monitoring.yml logs -f
+
+# Health Check Level 2
+.\health-check-level2.ps1
+
+# Access URLs
+# Frontend:        http://localhost:8070
+# Backend API:     http://localhost:8060
+# Prometheus:      http://localhost:9090
+# Grafana:         http://localhost:3000 (admin/admin123)
+# cAdvisor:        http://localhost:8081
+# Node Exporter:   http://localhost:9100
+
+# Generate Test Traffic for Metrics
+for ($i = 1; $i -le 20; $i++) { 
+    Invoke-WebRequest -Uri "http://localhost:8000" | Out-Null
+    Invoke-WebRequest -Uri "http://localhost:8000/users" | Out-Null
+    Start-Sleep -Seconds 1 
+}
+
+# ============================================================================
+# PROMETHEUS QUERIES (Copy into Prometheus UI)
+# ============================================================================
+
+# Basic Health Check
+up
+
+# HTTP Request Rate
+rate(http_requests_total[5m])
+
+# HTTP Request Total Count
+http_requests_total
+
+# Container CPU Usage
+rate(container_cpu_usage_seconds_total{name=~"fusionpact-.*"}[5m]) * 100
+
+# Container Memory Usage
+container_memory_usage_bytes{name=~"fusionpact-.*"}
+
+# System Load Average
+node_load1
+
+# Available Memory
+node_memory_MemAvailable_bytes
+
+# Response Time 95th Percentile
+histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+# Error Rate
+rate(http_requests_total{status=~"5.."}[5m])
+
+# Container Network Received
+rate(container_network_receive_bytes_total{name=~"fusionpact-.*"}[5m])
+
+# Filesystem Usage Percentage
+(node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100
+
+# ============================================================================
+# DOCKER MANAGEMENT COMMANDS
+# ============================================================================
+
+# Container Management
+docker ps -a                                 # List all containers
+docker logs <container-name>                 # View container logs
+docker exec -it <container-name> /bin/bash   # Access container shell
+docker inspect <container-name>              # Container details
+docker stats --no-stream                     # Resource usage
+
+# Image Management
+docker images                                # List images
+docker rmi <image-name>                      # Remove image
+docker build -t <tag> .                      # Build image
+docker pull <image-name>                     # Pull image
+
+# Volume Management
+docker volume ls                             # List volumes
+docker volume inspect <volume-name>          # Volume details
+docker volume prune                          # Remove unused volumes
+
+# Network Management
+docker network ls                            # List networks
+docker network inspect <network-name>        # Network details
+
+# System Cleanup
+docker system prune                          # Remove unused data
+docker system prune -a                       # Remove all unused data
+docker container prune                       # Remove stopped containers
+docker image prune                           # Remove unused images
+
+# ============================================================================
+# DEBUGGING AND TROUBLESHOOTING COMMANDS
+# ============================================================================
+
+# Check Port Usage
+netstat -ano | findstr :8000                 # Check what's using port 8000
+netstat -ano | findstr :8080                 # Check what's using port 8080
+netstat -ano | findstr :9090                 # Check what's using port 9090
+netstat -ano | findstr :3000                 # Check what's using port 3000
+
+# Process Management
+tasklist /FI "PID eq <PID>"                  # Find process by PID
+taskkill /PID <PID> /F                       # Kill process by PID
+
+# Docker Service Status
+docker info                                  # Docker system info
+docker version                               # Docker version
+systemctl status docker                      # Docker service status (Linux)
+
+# Container Health Checks
+docker inspect <container> --format='{{json .State.Health}}'  # Health status
+docker exec <container> curl -f http://localhost:8000/       # Manual health check
+
+# View Container Logs
+docker-compose -f docker-compose.monitoring.yml logs backend
+docker-compose -f docker-compose.monitoring.yml logs frontend
+docker-compose -f docker-compose.monitoring.yml logs prometheus
+docker-compose -f docker-compose.monitoring.yml logs grafana
+
+# ============================================================================
+# PROMETHEUS API COMMANDS
+# ============================================================================
+
+# Check Targets Status
+curl "http://localhost:9090/api/v1/targets"
+
+# Query Metrics
+curl "http://localhost:9090/api/v1/query?query=up"
+curl "http://localhost:9090/api/v1/query?query=http_requests_total"
+curl "http://localhost:9090/api/v1/query?query=rate(http_requests_total[5m])"
+
+# Query Range (with PowerShell)
+$response = Invoke-WebRequest "http://localhost:9090/api/v1/query?query=up"
+$response.Content | ConvertFrom-Json
+
+# ============================================================================
+# GRAFANA API COMMANDS
+# ============================================================================
+
+# Check Datasources (PowerShell)
+$credential = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:admin123"))
+$headers = @{Authorization = "Basic $credential"}
+Invoke-WebRequest -Uri "http://localhost:3000/api/datasources" -Headers $headers
+
+# ============================================================================
+# PROJECT STRUCTURE COMMANDS
+# ============================================================================
+
+# View Project Structure
+tree /f                                       # Windows
+find . -type f                               # Linux/Mac
+
+# File Operations
+copy <source> <destination>                   # Windows copy
+cp <source> <destination>                     # Linux copy
+move <source> <destination>                   # Windows move
+mv <source> <destination>                     # Linux move
+
+# ============================================================================
+# AWS DEPLOYMENT COMMANDS (for Cloud Deployment)
+# ============================================================================
+
+# Make AWS script executable (Linux/Mac)
+chmod +x aws-deploy.sh
+
+# Run AWS deployment script
+bash aws-deploy.sh
+
+# AWS CLI commands (if using AWS)
+aws configure                                 # Configure AWS credentials
+aws ec2 describe-instances                    # List EC2 instances
+aws ecs list-clusters                         # List ECS clusters
+
+# ============================================================================
+# BACKUP AND RESTORE COMMANDS
+# ============================================================================
+
+# Export Docker Images
+docker save -o backend-image.tar fusionpact-devops-challenge-backend
+docker save -o frontend-image.tar fusionpact-devops-challenge-frontend
+
+# Import Docker Images
+docker load -i backend-image.tar
+docker load -i frontend-image.tar
+
+# Backup Volumes
+docker run --rm -v fusionpact-devops-challenge_backend-data:/data -v ${PWD}:/backup alpine tar czf /backup/backend-data-backup.tar.gz /data
+
+# ============================================================================
+# USEFUL POWERSHELL COMMANDS
+# ============================================================================
+
+# Test Web Request
+Invoke-WebRequest -Uri "http://localhost:8000" -Method Get
+(Invoke-WebRequest -Uri "http://localhost:8000").StatusCode
+
+# JSON Conversion
+$data = @{name="test"; value=123} | ConvertTo-Json
+$response | ConvertFrom-Json
+
+# Wait/Sleep
+Start-Sleep -Seconds 30
+
+# Loop for Traffic Generation
+for ($i = 1; $i -le 10; $i++) { 
+    Write-Host "Request $i"
+    # Your commands here
+}
+
+# ============================================================================
+# QUICK START COMMAND SEQUENCE
+# ============================================================================
+
+# 1. Start Level 1 (Basic Application)
+docker-compose build
+docker-compose up -d
+.\health-check.ps1
+
+# 2. Start Level 2 (Full Monitoring)
+docker-compose down
+docker-compose -f docker-compose.monitoring.yml build
+docker-compose -f docker-compose.monitoring.yml up -d
+.\health-check-level2.ps1
+
+# 3. Generate Test Data
+for ($i = 1; $i -le 10; $i++) { 
+    Invoke-WebRequest -Uri "http://localhost:8000" | Out-Null
+    Start-Sleep -Seconds 1 
+}
+
+# 4. Access Services
+# Frontend:    http://localhost:8070
+# Prometheus:  http://localhost:9090
+# Grafana:     http://localhost:3000 (admin/admin123)
+
+# ============================================================================
+# EMERGENCY COMMANDS
+# ============================================================================
+
+# Stop All Containers
+docker stop $(docker ps -q)
+
+# Remove All Containers
+docker rm $(docker ps -aq)
+
+# Full System Reset
+docker system prune -a --volumes
+
+# Restart Docker Service (Windows)
+Restart-Service docker
+
+# Check if ports are free
+Test-NetConnection -ComputerName localhost -Port 8000
+Test-NetConnection -ComputerName localhost -Port 8080
+Test-NetConnection -ComputerName localhost -Port 9090
+Test-NetConnection -ComputerName localhost -Port 3000
+
+# ============================================================================
+# SUBMISSION CHECKLIST COMMANDS
+# ============================================================================
+
+# 1. Verify All Services Running
+docker-compose -f docker-compose.monitoring.yml ps
+
+# 2. Test All Endpoints
+curl http://localhost:8070    # Frontend
+curl http://localhost:6000    # Backend
+curl http://localhost:9090    # Prometheus
+curl http://localhost:3000    # Grafana
+
+# 3. Check Metrics Collection
+curl "http://localhost:9090/api/v1/query?query=up"
+
+# 4. Generate Screenshots for SOP
+# - Prometheus Targets: http://localhost:9090/targets
+# - Grafana Dashboard: http://localhost:3000
+# - Frontend: http://localhost:8070
+# - cAdvisor: http://localhost:8081
+
+# ============================================================================
+# END OF COMMANDS FILE
+# ============================================================================

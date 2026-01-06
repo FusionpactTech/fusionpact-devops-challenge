@@ -1,0 +1,39 @@
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8070:80"
+    container_name: fusionpact-frontend
+    restart: unless-stopped
+    networks:
+      - fusionpact-network
+
+  # Backend service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8060:8060"
+    container_name: fusionpact-backend
+    restart: unless-stopped
+    volumes:
+      # Data persistence for user data
+      - backend-data:/app/app/data
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - fusionpact-network
+
+# Named volumes for data persistence
+volumes:
+  backend-data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  fusionpact-network:
+    driver: bridge
