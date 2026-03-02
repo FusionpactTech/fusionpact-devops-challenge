@@ -1,4 +1,3 @@
-# from typing import List
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi import FastAPI
 
@@ -16,6 +15,15 @@ async def index():
     Index route for our application
     """
     return {"message": "Hello from FastAPI -@kiranrakh155@gmail.com ;)"}
+
+
+# Adding this Health check endpoint
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint for monitoring
+    """
+    return {"status": "healthy"}
 
 
 @app.post("/users", response_model=BaseResponse)

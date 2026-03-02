@@ -1,5 +1,13 @@
-node_modules
 .env
-.env.local
-dist
-build
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+
+# macOS
+.DS_Store
+
